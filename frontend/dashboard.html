@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard – Clairo</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="/" class="nav-logo">
+    <div class="logo-icon">🎙</div>
+    Clairo
+  </a>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/dashboard" class="active">Dashboard</a>
+    <a href="/history">History</a>
+  </div>
+</nav>
+
+<div class="app-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <p class="sidebar-label">Workspace</p>
+      <a href="/dashboard" class="sidebar-link active">
+        <span class="icon">🏠</span> Dashboard
+      </a>
+      <a href="/history" class="sidebar-link">
+        <span class="icon">🗂</span> History
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <p class="sidebar-label">Actions</p>
+      <a href="/dashboard" class="sidebar-link" id="sidebar-new">
+        <span class="icon">➕</span> New Analysis
+      </a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content">
+    <div class="page-header">
+      <h1>Dashboard</h1>
+      <p>Analyze meeting transcripts and extract key insights instantly</p>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-row stagger" id="stats-row">
+      <div class="stat-card">
+        <div class="label">Total Meetings</div>
+        <div class="value" id="stat-total">—</div>
+        <div class="sub">all time</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">This Week</div>
+        <div class="value" id="stat-week">—</div>
+        <div class="sub">last 7 days</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Action Items</div>
+        <div class="value" id="stat-actions">—</div>
+        <div class="sub">total extracted</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Decisions</div>
+        <div class="value" id="stat-decisions">—</div>
+        <div class="sub">total captured</div>
+      </div>
+    </div>
+
+    <!-- UPLOAD FORM -->
+    <div class="card" style="margin-bottom:1.5rem">
+      <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:1.25rem">📤 Upload Meeting Transcript</h2>
+
+      <div class="form-group">
+        <label class="form-label">Meeting Title</label>
+        <input type="text" id="meeting-title" class="form-input" placeholder="e.g. Product Planning Q3" />
+      </div>
+
+      <!-- Drop Zone -->
+      <div class="upload-zone" id="drop-zone">
+        <input type="file" id="file-input" accept=".txt">
+        <div class="upload-icon">📁</div>
+        <h3>Drop a .txt file here</h3>
+        <p>or click to browse</p>
+      </div>
+      <p id="file-name" style="font-size:0.8rem;color:var(--primary);margin-top:0.5rem;font-weight:600"></p>
+
+      <div class="divider-or">or type / paste transcript</div>
+
+      <div class="form-group">
+        <label class="form-label">Transcript</label>
+        <textarea class="transcript-input" id="transcript-input"
+          placeholder="John: We should launch marketing next week.&#10;Sara: I will prepare the creatives by Friday.&#10;John: Great, let's confirm the budget too.&#10;Sara: Agreed, I will send the budget breakdown."></textarea>
+      </div>
+
+      <div style="display:flex;gap:0.75rem;align-items:center">
+        <button class="btn btn-primary" id="analyze-btn">
+          ✨ Analyze Meeting
+        </button>
+        <button class="btn btn-ghost" id="clear-btn">Clear</button>
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--text-muted);margin-left:auto;cursor:pointer">
+          <input type="checkbox" id="save-toggle" checked style="accent-color:var(--primary)">
+          Save to history
+        </label>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="results-container"></div>
+
+    <!-- EXPORT BAR (hidden until analysis done) -->
+    <div id="export-bar" style="display:none;margin-top:1.25rem">
+      <div class="card" style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+        <span style="font-size:0.9rem;font-weight:700">Export Notes:</span>
+        <button class="btn btn-outline btn-sm" id="export-txt">📄 Download TXT</button>
+        <button class="btn btn-outline btn-sm" id="export-pdf">📑 Download PDF</button>
+        <a href="/history" class="btn btn-ghost btn-sm" style="margin-left:auto">View History →</a>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div id="toast-container"></div>
+<script src="/static/js/app.js"></script>
+<script>
+let currentMeetingId = null;
+
+// ── Load stats ─────────────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const meetings = await apiGet('/meetings');
+    const now = Date.now();
+    const week = meetings.filter(m => now - new Date(m.created_at).getTime() < 7*86400*1000);
+    const totalActions = meetings.reduce((sum, m) => sum + (m.action_items?.length || 0), 0);
+    const totalDecisions = meetings.reduce((sum, m) => sum + (m.decisions?.length || 0), 0);
+
+    document.getElementById('stat-total').textContent = meetings.length;
+    document.getElementById('stat-week').textContent = week.length;
+    document.getElementById('stat-actions').textContent = totalActions;
+    document.getElementById('stat-decisions').textContent = totalDecisions;
+  } catch { /* silent */ }
+}
+
+// ── File drop ──────────────────────────────────────────────────────────────
+let selectedFile = null;
+
+initDropZone('drop-zone', 'file-input', (file) => {
+  selectedFile = file;
+  document.getElementById('file-name').textContent = `📎 ${file.name}`;
+  if (!document.getElementById('meeting-title').value) {
+    document.getElementById('meeting-title').value = file.name.replace('.txt', '').replace(/_/g, ' ');
+  }
+});
+
+// ── Analyze ────────────────────────────────────────────────────────────────
+document.getElementById('analyze-btn').addEventListener('click', async () => {
+  const transcript = document.getElementById('transcript-input').value.trim();
+  const title = document.getElementById('meeting-title').value.trim() || 'Untitled Meeting';
+  const save = document.getElementById('save-toggle').checked;
+  const btn = document.getElementById('analyze-btn');
+
+  if (!transcript && !selectedFile) {
+    showToast('Please paste a transcript or upload a file.', 'error');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Analyzing…';
+  showLoader('results-container', 'Running NLP analysis…');
+  document.getElementById('export-bar').style.display = 'none';
+
+  try {
+    const fd = new FormData();
+    fd.append('title', title);
+    fd.append('save', save);
+    if (selectedFile) {
+      fd.append('file', selectedFile);
+    } else {
+      fd.append('transcript', transcript);
+    }
+
+    const data = await apiPost('/analyze-meeting', fd);
+    currentMeetingId = data.meeting_id;
+    saveAnalysisToSession(data);
+    renderAnalysis(data, 'results-container');
+
+    if (currentMeetingId) {
+      document.getElementById('export-bar').style.display = 'block';
+      document.getElementById('export-txt').onclick = () => exportMeeting(currentMeetingId, 'txt');
+      document.getElementById('export-pdf').onclick = () => exportMeeting(currentMeetingId, 'pdf');
+      showToast('Analysis complete & saved!', 'success');
+      loadStats();
+    } else {
+      document.getElementById('export-bar').style.display = 'none';
+      showToast('Analysis complete!', 'success');
+    }
+  } catch (err) {
+    hideLoader('results-container');
+    showToast(err.message || 'Analysis failed.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✨ Analyze Meeting';
+  }
+});
+
+// ── Clear ──────────────────────────────────────────────────────────────────
+document.getElementById('clear-btn').addEventListener('click', () => {
+  document.getElementById('transcript-input').value = '';
+  document.getElementById('meeting-title').value = '';
+  document.getElementById('file-name').textContent = '';
+  document.getElementById('results-container').innerHTML = '';
+  document.getElementById('export-bar').style.display = 'none';
+  selectedFile = null;
+  currentMeetingId = null;
+});
+
+loadStats();
+</script>
+</body>
+</html>

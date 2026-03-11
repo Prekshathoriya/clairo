@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clairo – AI Meeting Assistant</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="/" class="nav-logo">
+    <div class="logo-icon">🎙</div>
+    Clairo
+  </a>
+  <div class="nav-links">
+    <a href="/" class="active">Home</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/history">History</a>
+  </div>
+  <a href="/dashboard" class="btn btn-primary btn-sm">Open Dashboard →</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-orb hero-orb-1"></div>
+  <div class="hero-orb hero-orb-2"></div>
+
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span></span>
+      Powered by local NLP · No API keys needed
+    </div>
+
+    <h1>
+      Turn every meeting into<br>
+      <span class="accent">structured clarity</span>
+    </h1>
+
+    <p class="hero-sub">
+      Clairo automatically summarizes transcripts, extracts action items,
+      key decisions, and speaker insights — all running locally on your machine.
+    </p>
+
+    <div class="hero-actions">
+      <a href="/dashboard" class="btn btn-primary btn-lg">Start Demo &nbsp;→</a>
+      <a href="/history" class="btn btn-outline btn-lg">View History</a>
+    </div>
+
+    <!-- Mock preview window -->
+    <div class="hero-demo-preview" style="margin-top:3.5rem">
+      <div class="demo-bar">
+        <div class="demo-dot"></div>
+        <div class="demo-dot"></div>
+        <div class="demo-dot"></div>
+        <div class="demo-url">clairo.app/analysis</div>
+      </div>
+      <div class="demo-content">
+        <div class="demo-tag">Meeting Summary</div>
+        <div class="demo-line w-full primary" style="height:10px"></div>
+        <div class="demo-line w-80 primary" style="height:10px"></div>
+        <div class="demo-line w-60" style="height:8px;margin-top:16px"></div>
+        <div style="display:flex;gap:1rem;margin-top:1rem">
+          <div style="flex:1">
+            <div class="demo-tag" style="background:rgba(16,185,129,0.1);color:#10B981">✅ Action Items</div>
+            <div class="demo-line w-full" style="margin-top:6px"></div>
+            <div class="demo-line w-80"></div>
+            <div class="demo-line w-60"></div>
+          </div>
+          <div style="flex:1">
+            <div class="demo-tag" style="background:rgba(245,158,11,0.1);color:#F59E0B">⚡ Decisions</div>
+            <div class="demo-line w-full" style="margin-top:6px"></div>
+            <div class="demo-line w-70"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features">
+  <p class="section-label">What Clairo Does</p>
+  <h2 class="section-title">Everything you need from a meeting</h2>
+  <p class="section-sub">From raw transcript to structured notes in seconds, powered entirely by local NLP — no cloud, no cost.</p>
+
+  <div class="features-grid stagger">
+    <div class="feature-card">
+      <div class="feature-icon">📋</div>
+      <h3>AI Meeting Summary</h3>
+      <p>TF-IDF based extractive summarization distills long transcripts into concise, readable summaries.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">✅</div>
+      <h3>Action Item Detection</h3>
+      <p>Automatically detects tasks assigned to specific speakers based on linguistic patterns and action verbs.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <h3>Key Decisions</h3>
+      <p>Extracts decision statements and commitments made during the meeting for quick reference.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎤</div>
+      <h3>Speaker Insights</h3>
+      <p>Visualizes participation rates by speaker so you always know who drove the conversation.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🗂</div>
+      <h3>Meeting History</h3>
+      <p>All analyzed meetings are saved locally in SQLite and browsable through a searchable dashboard.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📤</div>
+      <h3>Export to TXT & PDF</h3>
+      <p>Download beautifully formatted meeting notes as TXT or PDF with one click, ready to share.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  Built with ❤️ using <strong>FastAPI</strong> + <strong>NLTK</strong> · No external APIs · 100% local
+</footer>
+
+<div id="toast-container"></div>
+</body>
+</html>

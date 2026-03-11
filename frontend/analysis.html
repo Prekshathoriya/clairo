@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analysis – Clairo</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="/" class="nav-logo">
+    <div class="logo-icon">🎙</div>
+    Clairo
+  </a>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/history" class="active">History</a>
+  </div>
+</nav>
+
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <p class="sidebar-label">Workspace</p>
+      <a href="/dashboard" class="sidebar-link">
+        <span class="icon">🏠</span> Dashboard
+      </a>
+      <a href="/history" class="sidebar-link active">
+        <span class="icon">🗂</span> History
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <p class="sidebar-label">Actions</p>
+      <a href="/dashboard" class="sidebar-link">
+        <span class="icon">➕</span> New Analysis
+      </a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+      <div>
+        <h1 id="meeting-title-header">Meeting Analysis</h1>
+        <p id="meeting-date-header">Loading…</p>
+      </div>
+      <div style="display:flex;gap:0.75rem">
+        <button class="btn btn-outline btn-sm" id="export-txt">📄 TXT</button>
+        <button class="btn btn-outline btn-sm" id="export-pdf">📑 PDF</button>
+        <a href="/history" class="btn btn-ghost btn-sm">← Back</a>
+      </div>
+    </div>
+
+    <div id="analysis-container">
+      <div class="loader-wrap">
+        <div class="spinner"></div>
+        <p class="loader-text">Loading meeting data…</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast-container"></div>
+<script src="/static/js/app.js"></script>
+<script>
+let meetingId = null;
+
+async function loadMeeting() {
+  const params = new URLSearchParams(window.location.search);
+  meetingId = params.get('id');
+
+  if (!meetingId) {
+    // Try loading from session (just-analyzed)
+    const session = loadAnalysisFromSession();
+    if (session) {
+      renderPageData(session);
+      return;
+    }
+    document.getElementById('analysis-container').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <h3>No meeting selected</h3>
+        <p>Open a meeting from the <a href="/history" style="color:var(--primary)">History page</a> or run a new analysis.</p>
+      </div>`;
+    return;
+  }
+
+  try {
+    const data = await apiGet(`/meetings/${meetingId}`);
+    renderPageData(data);
+  } catch (err) {
+    document.getElementById('analysis-container').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">❌</div>
+        <h3>Meeting not found</h3>
+        <p>${err.message}</p>
+      </div>`;
+  }
+}
+
+function renderPageData(data) {
+  meetingId = meetingId || data.meeting_id;
+  document.getElementById('meeting-title-header').textContent = data.title || 'Meeting Analysis';
+  document.getElementById('meeting-date-header').textContent = data.created_at
+    ? `Analyzed on ${formatDate(data.created_at)}`
+    : 'Just analyzed';
+
+  renderAnalysis(data, 'analysis-container');
+
+  if (meetingId) {
+    document.getElementById('export-txt').onclick = () => exportMeeting(meetingId, 'txt');
+    document.getElementById('export-pdf').onclick = () => exportMeeting(meetingId, 'pdf');
+  } else {
+    document.getElementById('export-txt').style.display = 'none';
+    document.getElementById('export-pdf').style.display = 'none';
+  }
+}
+
+loadMeeting();
+</script>
+</body>
+</html>

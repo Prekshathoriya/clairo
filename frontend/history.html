@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>History – Clairo</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="/" class="nav-logo">
+    <div class="logo-icon">🎙</div>
+    Clairo
+  </a>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/history" class="active">History</a>
+  </div>
+</nav>
+
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <p class="sidebar-label">Workspace</p>
+      <a href="/dashboard" class="sidebar-link">
+        <span class="icon">🏠</span> Dashboard
+      </a>
+      <a href="/history" class="sidebar-link active">
+        <span class="icon">🗂</span> History
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <p class="sidebar-label">Actions</p>
+      <a href="/dashboard" class="sidebar-link">
+        <span class="icon">➕</span> New Analysis
+      </a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header" style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+      <div>
+        <h1>Meeting History</h1>
+        <p>All your analyzed meetings, stored locally</p>
+      </div>
+      <div style="display:flex;gap:0.75rem;align-items:center">
+        <input type="text" id="search-input" class="form-input" placeholder="🔍 Search meetings…" style="width:220px">
+        <a href="/dashboard" class="btn btn-primary btn-sm">➕ New</a>
+      </div>
+    </div>
+
+    <div id="meetings-container">
+      <div class="loader-wrap">
+        <div class="spinner"></div>
+        <p class="loader-text">Loading meetings…</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast-container"></div>
+<script src="/static/js/app.js"></script>
+<script>
+let allMeetings = [];
+
+async function loadHistory() {
+  try {
+    allMeetings = await apiGet('/meetings');
+    renderMeetings(allMeetings);
+  } catch (err) {
+    document.getElementById('meetings-container').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">⚠️</div>
+        <h3>Could not load meetings</h3>
+        <p>${err.message}</p>
+      </div>`;
+  }
+}
+
+function renderMeetings(meetings) {
+  const container = document.getElementById('meetings-container');
+  if (!meetings.length) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🗂</div>
+        <h3>No meetings yet</h3>
+        <p>Analyze your first meeting on the <a href="/dashboard" style="color:var(--primary)">Dashboard</a>.</p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = `<div class="meeting-list stagger" id="meeting-list">
+    ${meetings.map(m => `
+      <div class="meeting-item" data-id="${m.id}">
+        <div class="meeting-icon">🎙</div>
+        <div class="meeting-info">
+          <div class="meeting-title">${m.title || 'Untitled Meeting'}</div>
+          <div class="meeting-meta">
+            ${formatDate(m.created_at)} &middot;
+            ${(m.action_items || []).length} action items &middot;
+            ${(m.decisions || []).length} decisions
+          </div>
+        </div>
+        <div class="meeting-actions" onclick="event.stopPropagation()">
+          <button class="btn btn-outline btn-sm" onclick="exportMeeting(${m.id},'txt')">TXT</button>
+          <button class="btn btn-outline btn-sm" onclick="exportMeeting(${m.id},'pdf')">PDF</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteMeeting(${m.id})">🗑</button>
+        </div>
+      </div>
+    `).join('')}
+  </div>`;
+
+  // Click to view
+  container.querySelectorAll('.meeting-item').forEach(item => {
+    item.addEventListener('click', () => {
+      window.location.href = `/analysis?id=${item.dataset.id}`;
+    });
+  });
+}
+
+async function deleteMeeting(id) {
+  if (!confirm('Delete this meeting? This cannot be undone.')) return;
+  try {
+    await apiDelete(`/meetings/${id}`);
+    showToast('Meeting deleted.', 'success');
+    allMeetings = allMeetings.filter(m => m.id !== id);
+    renderMeetings(allMeetings);
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+// ── Search ──────────────────────────────────────────────────────────────────
+document.getElementById('search-input').addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  const filtered = allMeetings.filter(m =>
+    (m.title || '').toLowerCase().includes(q) ||
+    (m.summary || '').toLowerCase().includes(q)
+  );
+  renderMeetings(filtered);
+});
+
+loadHistory();
+</script>
+</body>
+</html>
